@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import UserProfile, Direction, Project, ProjectMember, Task, Activity, SiteInfo
+from .models import UserProfile, Direction, Project, ProjectMember, Task, Activity, SiteInfo, Review
 
 
 @admin.register(UserProfile)
@@ -41,3 +41,8 @@ class ActivityAdmin(admin.ModelAdmin):
 @admin.register(SiteInfo)
 class SiteInfoAdmin(admin.ModelAdmin):
     list_display = ['contact_email', 'instagram', 'telegram', 'location']
+
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ['text_review', 'user', 'project', 'rating', 'created_date']

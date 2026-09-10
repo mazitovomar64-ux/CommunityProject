@@ -1,23 +1,10 @@
 from django.urls import path, include
 from rest_framework import routers
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
-from .views import (
-    RegisterView,
-    CustomLoginView,
-    LogoutView,
-    MyProfileView,
-    UserProfileListAPIView,
-    DetailUserProfileAPIView,
-    DirectionListAPIView,
-    ProjectListAPIView,
-    ProjectDetailAPIView,
-    ProjectViewSet,
-    ProjectMemberViewSet,
-    TaskListAPIView,
-    TaskDetailAPIView,
-    TaskViewSet,
-    ActivityListAPIView,
-    SiteInfoView,
+from .views import (RegisterView, CustomLoginView, LogoutView, MyProfileView, UserProfileListAPIView,
+    DetailUserProfileAPIView, DirectionListAPIView, ProjectListAPIView, ProjectDetailAPIView,
+    ProjectViewSet, ProjectMemberViewSet, TaskListAPIView, TaskDetailAPIView, TaskViewSet,
+    ActivityListAPIView, SiteInfoView,
 )
 
 router = routers.SimpleRouter()

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import UserProfile, Direction, Project, ProjectMember, Task, Activity, SiteInfo
+from .models import UserProfile, Direction, Project, ProjectMember, Task, Activity, SiteInfo, Review
 
 
 
@@ -43,16 +43,24 @@ class LoginSerializer(serializers.Serializer):
 
 
 class ListUserProfileSerializer(serializers.ModelSerializer):
+    average_rating = serializers.SerializerMethodField()
     class Meta:
         model = UserProfile
-        fields = ['id', 'first_name', 'last_name', 'position', 'avatar']
+        fields = ['id', 'first_name', 'last_name', 'position', 'avatar', 'average_rating']
+
+        def get_average_rating(self, obj):
+            return obj.get_average_rating()
 
 
 class DetailUserProfileSerializer(serializers.ModelSerializer):
+    average_rating = serializers.SerializerMethodField()
     class Meta:
         model = UserProfile
         fields = ['id', 'username', 'email', 'first_name', 'last_name',
-                  'position', 'bio', 'avatar', 'cv_file', 'user_role']
+                  'position', 'bio', 'avatar', 'cv_file', 'user_role', 'average_rating']
+
+        def get_average_rating(self, obj):
+            return obj.get_average_rating()
 
 
 
@@ -88,6 +96,10 @@ class DetailProjectSerializer(serializers.ModelSerializer):
         model = Project
         fields = ['id', 'title', 'description', 'icon', 'category', 'status',
                   'created_at', 'participants']
+
+
+        def get_average_rating(self, obj):
+            return obj.get_average_rating()
 
 
 class ProjectCreateSerializer(serializers.ModelSerializer):
@@ -145,3 +157,10 @@ class SiteInfoSerializer(serializers.ModelSerializer):
 
     def get_directions_count(self, obj):
         return Direction.objects.count()
+
+
+
+class ReviewSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = ('text_review', 'user', 'project', 'rating', 'created_data')

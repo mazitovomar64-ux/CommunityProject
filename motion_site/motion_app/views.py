@@ -2,29 +2,20 @@ from rest_framework import viewsets, generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import (
-    UserSerializer,
-    LoginSerializer,
-    ListUserProfileSerializer,
-    DetailUserProfileSerializer,
-    DirectionSerializer,
-    ListProjectSerializer,
-    DetailProjectSerializer,
-    ProjectCreateSerializer,
-    ProjectMemberSerializer,
-    ListTaskSerializer,
-    DetailTaskSerializer,
-    TaskCreateSerializer,
-    ActivitySerializer,
-    SiteInfoSerializer,
+from .serializers import (UserSerializer, LoginSerializer, ListUserProfileSerializer,DetailUserProfileSerializer,
+    DirectionSerializer, ListProjectSerializer, DetailProjectSerializer, ProjectCreateSerializer,
+    ProjectMemberSerializer, ListTaskSerializer, DetailTaskSerializer, TaskCreateSerializer,
+    ActivitySerializer, SiteInfoSerializer, ReviewSerializers
 )
-from .models import UserProfile, Direction, Project, ProjectMember, Task, Activity, SiteInfo
+from .models import UserProfile, Direction, Project, ProjectMember, Task, Activity, SiteInfo, Review
+from rest_framework.exceptions import PermissionDenied
+from .permissions import IsAdminRole, ReadOnlyOrAdmin, IsProjectMemberOrAdmin
 
 
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = UserSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAdminRole]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -104,14 +95,14 @@ class ProjectDetailAPIView(generics.RetrieveAPIView):
 class ProjectViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.all()
     serializer_class = ProjectCreateSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [ReadOnlyOrAdmin]
 
 
 
 class ProjectMemberViewSet(viewsets.ModelViewSet):
     queryset = ProjectMember.objects.all()
     serializer_class = ProjectMemberSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminRole]
 
 
 
@@ -132,7 +123,14 @@ class TaskDetailAPIView(generics.RetrieveAPIView):
 class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.all()
     serializer_class = TaskCreateSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsProjectMemberOrAdmin]
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        project = serializer.validated_data.get('project')
+        if user.user_role != 'admin' and not project.participants.filter(user=user).exists():
+            raise PermissionDenied('Вы не участник этого проекта.')
+        serializer.save()
 
 
 
@@ -149,3 +147,11 @@ class SiteInfoView(generics.RetrieveAPIView):
 
     def get_object(self):
         return SiteInfo.objects.first()
+
+
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializers
+
+

@@ -13,12 +13,21 @@ class UserProfile(AbstractUser):
     RoleChoices = (
         ('admin', 'admin'),
         ('employee', 'employee'),
-        ('student', 'student'),
     )
-    user_role = models.CharField(max_length=20, choices=RoleChoices, default='student')
+    user_role = models.CharField(max_length=20, choices=RoleChoices, default='employee')
 
     def __str__(self):
         return f'{self.first_name} {self.last_name}'
+
+
+    def get_average_rating(self):
+        ratings = self.review_user.all()
+        if ratings.exists():
+            return round(sum([i.rating for i in ratings]) / ratings.count(), 2)
+        return 0
+
+    def get_count_people(self):
+        return self.review_user.count()
 
 
 class Direction(models.Model):
@@ -56,6 +65,16 @@ class Project(models.Model):
 
     def __str__(self):
         return self.title
+
+    def get_average_rating(self):
+        ratings = self.project_review.all()
+        if ratings.exists():
+            return round(sum([i.rating for i in ratings]) / ratings.count(), 2)
+        return 0
+
+    def get_count_people(self):
+        return self.project_review.count()
+
 
 
 class ProjectMember(models.Model):
@@ -113,3 +132,14 @@ class SiteInfo(models.Model):
 
     def __str__(self):
         return 'Site info'
+
+
+class Review(models.Model):
+    text_review = models.TextField()
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='review_user')
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='project_review', null=True, blank=True)
+    rating = models.PositiveIntegerField(choices=[(i,str(i))for i in range(1,6)])
+    created_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.user},{self.rating}'
