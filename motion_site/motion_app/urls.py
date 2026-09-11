@@ -1,16 +1,23 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework import routers
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
-from .views import (RegisterView, CustomLoginView, LogoutView, MyProfileView, UserProfileListAPIView,
-    DetailUserProfileAPIView, DirectionListAPIView, ProjectListAPIView, ProjectDetailAPIView,
-    ProjectViewSet, ProjectMemberViewSet, TaskListAPIView, TaskDetailAPIView, TaskViewSet,
-    ActivityListAPIView, SiteInfoView,
-)
+from .views import (ActivityListAPIView, CustomLoginView,DetailUserProfileAPIView,
+                    DirectionListAPIView, LogoutView,MyPermissionsView, MyPortfolioView,
+                    MyProfileView, ProjectDetailAPIView, ProjectListAPIView,
+                    ProjectMemberViewSet, ProjectViewSet, RegisterView, ReviewViewSet, SiteInfoView,
+                    TaskDetailAPIView, TaskListAPIView, TaskViewSet, TeamMemberViewSet, TeamViewSet,
+                    UserProfileListAPIView)
+
 
 router = routers.SimpleRouter()
+
 router.register(r'projects_manage', ProjectViewSet, basename='projects_manage')
 router.register(r'project_members', ProjectMemberViewSet, basename='project_members')
 router.register(r'tasks_manage', TaskViewSet, basename='tasks_manage')
+router.register(r'teams', TeamViewSet, basename='teams')
+router.register(r'team_members', TeamMemberViewSet, basename='team_members')
+router.register(r'reviews', ReviewViewSet, basename='reviews')
+
 
 urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
@@ -21,6 +28,8 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(), name='logout'),
 
     path('profile/', MyProfileView.as_view(), name='my_profile'),
+    path('portfolio/', MyPortfolioView.as_view(), name='my_portfolio'),
+    path('permissions/', MyPermissionsView.as_view(), name='my_permissions'),
 
     path('team/', UserProfileListAPIView.as_view(), name='team_list'),
     path('team/<int:pk>/', DetailUserProfileAPIView.as_view(), name='team_detail'),

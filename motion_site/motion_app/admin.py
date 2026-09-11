@@ -1,35 +1,62 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import UserProfile, Direction, Project, ProjectMember, Task, Activity, SiteInfo, Review
+
+from .models import Activity, Direction, Project, ProjectMember, Review, SiteInfo, Task, Team, TeamMember, UserProfile
 
 
 @admin.register(UserProfile)
 class UserProfileAdmin(UserAdmin):
-    list_display = ['username', 'email', 'first_name', 'last_name', 'position', 'user_role']
+    list_display = ['username', 'email', 'first_name', 'last_name', 'position', 'user_role', 'is_active']
     fieldsets = UserAdmin.fieldsets + (
-        ('Motion Community', {'fields': ('position', 'bio', 'avatar', 'cv_file', 'user_role')}),
+        (
+            'Motion Community',
+            {
+                'fields': (
+                    'position',
+                    'bio',
+                    'avatar',
+                    'cv_file',
+                    'user_role'
+                )
+            }
+        ),
     )
 
 
 @admin.register(Direction)
 class DirectionAdmin(admin.ModelAdmin):
-    list_display = ['title']
+    list_display = ['title', 'description', 'icon']
+
+
+@admin.register(Team)
+class TeamAdmin(admin.ModelAdmin):
+    list_display = ['name', 'created_by', 'created_at']
+
+
+@admin.register(TeamMember)
+class TeamMemberAdmin(admin.ModelAdmin):
+    list_display = ['team', 'user', 'role_in_team', 'joined_at']
 
 
 class ProjectMemberInline(admin.TabularInline):
     model = ProjectMember
-    extra = 1
+    extra = 0
 
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ['title', 'category', 'status', 'created_at']
+    list_display = ['title', 'category', 'status', 'team', 'created_by', 'created_at']
     inlines = [ProjectMemberInline]
+
+
+@admin.register(ProjectMember)
+class ProjectMemberAdmin(admin.ModelAdmin):
+    list_display = ['project', 'user', 'role_in_project', 'joined_at']
 
 
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ['title', 'project', 'priority', 'status', 'created_at']
+    list_display = ['title', 'project', 'priority', 'status', 'created_at', 'updated_at']
     filter_horizontal = ['assigned_to']
 
 
@@ -45,4 +72,4 @@ class SiteInfoAdmin(admin.ModelAdmin):
 
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
-    list_display = ['text_review', 'user', 'project', 'rating', 'created_date']
+    list_display = ['user', 'project', 'rating', 'created_date']
