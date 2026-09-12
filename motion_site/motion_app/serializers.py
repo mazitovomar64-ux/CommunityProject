@@ -64,11 +64,12 @@ class DetailUserProfileSerializer(serializers.ModelSerializer):
     average_rating = serializers.SerializerMethodField()
     role_display = serializers.CharField(source='get_user_role_display', read_only=True)
     team = serializers.SerializerMethodField()
+    projects = serializers.SerializerMethodField()
 
     class Meta:
         model = UserProfile
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'position', 'bio', 'avatar', 'cv_file', 'user_role', 'role_display', 'average_rating', 'team']
-        read_only_fields = ['id', 'username', 'email', 'user_role', 'role_display', 'average_rating', 'team']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'position', 'bio', 'avatar', 'cv_file', 'user_role', 'role_display', 'average_rating', 'team', 'projects']
+        read_only_fields = ['id', 'username', 'email', 'user_role', 'role_display', 'average_rating', 'team', 'projects']
 
     def get_average_rating(self, obj):
         return obj.get_average_rating()
@@ -78,6 +79,10 @@ class DetailUserProfileSerializer(serializers.ModelSerializer):
         if not membership:
             return None
         return TeamShortSerializer(membership.team).data
+
+    def get_projects(self, obj):
+        memberships = obj.project_memberships.select_related('project', 'project__team').all()
+        return ListProjectSerializer([m.project for m in memberships], many=True).data
 
 
 class DirectionSerializer(serializers.ModelSerializer):
@@ -109,21 +114,26 @@ class TeamMemberSerializer(serializers.ModelSerializer):
 class TeamSerializer(serializers.ModelSerializer):
     members = TeamMemberSerializer(many=True, read_only=True)
     members_count = serializers.IntegerField(source='members.count', read_only=True)
+    projects = serializers.SerializerMethodField()
 
     class Meta:
         model = Team
-        fields = ['id', 'name', 'description', 'created_by', 'created_at', 'members', 'members_count']
-        read_only_fields = ['id', 'created_by', 'created_at', 'members', 'members_count']
+        fields = ['id', 'name', 'description', 'created_by', 'created_at', 'members', 'members_count', 'projects']
+        read_only_fields = ['id', 'created_by', 'created_at', 'members', 'members_count', 'projects']
+
+    def get_projects(self, obj):
+        return ListProjectSerializer(obj.projects.all(), many=True).data
 
 
 class ListProjectSerializer(serializers.ModelSerializer):
     category_display = serializers.CharField(source='get_category_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     members_count = serializers.IntegerField(source='participants.count', read_only=True)
+    team_name = serializers.CharField(source='team.name', read_only=True, default=None)
 
     class Meta:
         model = Project
-        fields = ['id', 'title', 'icon', 'category', 'category_display', 'status', 'status_display', 'team', 'created_at', 'members_count']
+        fields = ['id', 'title', 'icon', 'category', 'category_display', 'status', 'status_display', 'team', 'team_name', 'created_at', 'members_count']
 
 
 class ProjectMemberSerializer(serializers.ModelSerializer):
@@ -153,13 +163,18 @@ class DetailProjectSerializer(serializers.ModelSerializer):
     average_rating = serializers.SerializerMethodField()
     category_display = serializers.CharField(source='get_category_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
+    team_name = serializers.CharField(source='team.name', read_only=True, default=None)
+    created_by_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
-        fields = ['id', 'title', 'description', 'icon', 'category', 'category_display', 'status', 'status_display', 'created_at', 'created_by', 'team', 'participants', 'tasks_count', 'average_rating']
+        fields = ['id', 'title', 'description', 'icon', 'category', 'category_display', 'status', 'status_display', 'created_at', 'created_by', 'created_by_name', 'team', 'team_name', 'participants', 'tasks_count', 'average_rating']
 
     def get_average_rating(self, obj):
         return obj.get_average_rating()
+
+    def get_created_by_name(self, obj):
+        return obj.created_by.get_full_name() or obj.created_by.email
 
 
 class ProjectCreateSerializer(serializers.ModelSerializer):
@@ -173,20 +188,22 @@ class ListTaskSerializer(serializers.ModelSerializer):
     priority_display = serializers.CharField(source='get_priority_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     assigned_to = ListUserProfileSerializer(many=True, read_only=True)
+    project_title = serializers.CharField(source='project.title', read_only=True)
 
     class Meta:
         model = Task
-        fields = ['id', 'title', 'priority', 'priority_display', 'status', 'status_display', 'project', 'assigned_to', 'created_at', 'updated_at']
+        fields = ['id', 'title', 'priority', 'priority_display', 'status', 'status_display', 'project', 'project_title', 'assigned_to', 'created_at', 'updated_at']
 
 
 class DetailTaskSerializer(serializers.ModelSerializer):
     priority_display = serializers.CharField(source='get_priority_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     assigned_to = ListUserProfileSerializer(many=True, read_only=True)
+    project_title = serializers.CharField(source='project.title', read_only=True)
 
     class Meta:
         model = Task
-        fields = ['id', 'title', 'description', 'priority', 'priority_display', 'status', 'status_display', 'project', 'assigned_to', 'created_at', 'updated_at']
+        fields = ['id', 'title', 'description', 'priority', 'priority_display', 'status', 'status_display', 'project', 'project_title', 'assigned_to', 'created_at', 'updated_at']
 
 
 class TaskCreateSerializer(serializers.ModelSerializer):

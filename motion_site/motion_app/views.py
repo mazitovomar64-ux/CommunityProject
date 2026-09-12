@@ -1,5 +1,6 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, viewsets
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -117,15 +118,40 @@ class MyPortfolioView(generics.GenericAPIView):
         })
 
 
+class UserPortfolioView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        user = get_object_or_404(UserProfile, pk=pk, is_active=True)
+
+        project_memberships = ProjectMember.objects.filter(user=user).select_related('project', 'project__team')
+        project_ids = project_memberships.values_list('project_id', flat=True)
+
+        projects = Project.objects.filter(id__in=project_ids).select_related('team').order_by('-created_at')
+
+        team_membership = TeamMember.objects.filter(user=user).select_related('team').prefetch_related('team__members__user').first()
+
+        team = TeamSerializer(team_membership.team).data if team_membership else None
+
+        return Response({
+            'user': DetailUserProfileSerializer(user).data,
+            'stats': {
+                'projects_count': projects.count()
+            },
+            'projects': ListProjectSerializer(projects, many=True).data,
+            'team': team
+        })
+
+
 class UserProfileListAPIView(generics.ListAPIView):
     serializer_class = ListUserProfileSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     queryset = UserProfile.objects.filter(is_active=True).order_by('first_name', 'last_name')
 
 
 class DetailUserProfileAPIView(generics.RetrieveAPIView):
     serializer_class = DetailUserProfileSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     queryset = UserProfile.objects.filter(is_active=True)
 
 
@@ -139,14 +165,6 @@ class TeamViewSet(viewsets.ModelViewSet):
     queryset = Team.objects.all().select_related('created_by').prefetch_related('members__user')
     serializer_class = TeamSerializer
     permission_classes = [IsAuthenticatedReadOnlyOrAdmin]
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-
-        if is_admin(self.request.user):
-            return queryset
-
-        return queryset.filter(members__user=self.request.user).distinct()
 
     def perform_create(self, serializer):
         team = serializer.save(created_by=self.request.user)
@@ -314,7 +332,10 @@ class SiteInfoView(generics.RetrieveAPIView):
     permission_classes = [AllowAny]
 
     def get_object(self):
-        return SiteInfo.objects.first()
+        obj = SiteInfo.objects.first()
+        if not obj:
+            raise NotFound('Информация о сайте ещё не заполнена.')
+        return obj
 
 
 class ReviewViewSet(viewsets.ModelViewSet):

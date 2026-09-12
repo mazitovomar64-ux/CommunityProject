@@ -6,7 +6,7 @@ from .views import (ActivityListAPIView, CustomLoginView,DetailUserProfileAPIVie
                     MyProfileView, ProjectDetailAPIView, ProjectListAPIView,
                     ProjectMemberViewSet, ProjectViewSet, RegisterView, ReviewViewSet, SiteInfoView,
                     TaskDetailAPIView, TaskListAPIView, TaskViewSet, TeamMemberViewSet, TeamViewSet,
-                    UserProfileListAPIView)
+                    UserPortfolioView, UserProfileListAPIView)
 
 
 router = routers.SimpleRouter()
@@ -33,6 +33,7 @@ urlpatterns = [
 
     path('team/', UserProfileListAPIView.as_view(), name='team_list'),
     path('team/<int:pk>/', DetailUserProfileAPIView.as_view(), name='team_detail'),
+    path('team/<int:pk>/portfolio/', UserPortfolioView.as_view(), name='user_portfolio'),
 
     path('directions/', DirectionListAPIView.as_view(), name='direction_list'),
 
