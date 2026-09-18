@@ -173,3 +173,15 @@ class Review(models.Model):
 
     def __str__(self):
         return f'{self.user} — {self.rating}'
+
+class Chat(models.Model):
+    person = models.ManyToManyField(UserProfile)
+    created_date = models.DateField(auto_now_add=True)
+
+class Message(models.Model):
+    text = models.TextField()
+    sender = models.ForeignKey(UserProfile,on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='images_chat/')
+    file = models.FileField(upload_to='files_chat/')
+    chat = models.ForeignKey(Chat,on_delete=models.CASCADE)
+    send_time = models.DateTimeField(auto_now_add=True)

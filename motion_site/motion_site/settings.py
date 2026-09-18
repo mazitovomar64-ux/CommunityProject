@@ -25,7 +25,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'motion_app',
-    'drf_yasg'
+    'drf_yasg',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -58,6 +59,15 @@ TEMPLATES = [
 
 ASGI_APPLICATION = 'motion_site.asgi.application'
 WSGI_APPLICATION = 'motion_site.wsgi.application'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
 
 DATABASES = {
     'default': {
