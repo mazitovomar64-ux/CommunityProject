@@ -175,13 +175,30 @@ class Review(models.Model):
         return f'{self.user} — {self.rating}'
 
 class Chat(models.Model):
-    person = models.ManyToManyField(UserProfile)
-    created_date = models.DateField(auto_now_add=True)
+    person = models.ManyToManyField(UserProfile, related_name='chats', verbose_name='Участники')
+    created_date = models.DateField('Дата создания', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Чат'
+        verbose_name_plural = 'Чаты'
+
+    def __str__(self):
+        return f'Чат #{self.pk}'
+
 
 class Message(models.Model):
-    text = models.TextField()
-    sender = models.ForeignKey(UserProfile,on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='images_chat/')
-    file = models.FileField(upload_to='files_chat/')
-    chat = models.ForeignKey(Chat,on_delete=models.CASCADE)
-    send_time = models.DateTimeField(auto_now_add=True)
+    text = models.TextField('Текст', blank=True)
+    sender = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='sent_messages', verbose_name='Отправитель')
+    image = models.ImageField('Изображение', upload_to='images_chat/', blank=True, null=True)
+    file = models.FileField('Файл', upload_to='files_chat/', blank=True, null=True)
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='messages', verbose_name='Чат')
+    send_time = models.DateTimeField('Время отправки', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Сообщение'
+        verbose_name_plural = 'Сообщения'
+        ordering = ['send_time']
+
+    def __str__(self):
+        return f'{self.sender}: {self.text[:30]}'
+

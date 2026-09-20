@@ -4,10 +4,12 @@ from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.parsers import FormParser, MultiPartParser
 
-from .models import Activity, Direction, Project, ProjectMember, Review, SiteInfo, Task, Team, TeamMember, UserProfile
+
+from .models import Activity, Direction, Project, ProjectMember, Review, SiteInfo, Task, Team, TeamMember, UserProfile, Chat,Message
 from .permissions import IsAdminRole, IsAuthenticatedReadOnlyOrAdmin, ReadOnlyOrAdmin, ReviewPermission, is_admin
-from .serializers import ActivitySerializer, DetailProjectSerializer, DetailTaskSerializer, DetailUserProfileSerializer, DirectionSerializer, ListProjectSerializer, ListTaskSerializer, ListUserProfileSerializer, LoginSerializer, ProjectCreateSerializer, ProjectMemberSerializer, ReviewSerializer, SiteInfoSerializer, TaskCreateSerializer, TeamMemberSerializer, TeamSerializer, UserSerializer
+from .serializers import ActivitySerializer, DetailProjectSerializer, DetailTaskSerializer, DetailUserProfileSerializer, DirectionSerializer, ListProjectSerializer, ListTaskSerializer, ListUserProfileSerializer, LoginSerializer, ProjectCreateSerializer, ProjectMemberSerializer, ReviewSerializer, SiteInfoSerializer, TaskCreateSerializer, TeamMemberSerializer, TeamSerializer, UserSerializer , MessageSerializer,ChatSerializer
 
 
 def add_activity(user, description):
@@ -368,3 +370,42 @@ class ReviewViewSet(viewsets.ModelViewSet):
             raise PermissionDenied('Нельзя удалять чужой отзыв.')
 
         return super().destroy(request, *args, **kwargs)
+
+class ChatListAPIView(generics.ListCreateAPIView):
+    """Список чатов текущего пользователя (для боковой панели) и создание нового чата."""
+    serializer_class = ChatSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Chat.objects.filter(person=self.request.user).prefetch_related('person', 'messages').order_by('-created_date')
+
+    def perform_create(self, serializer):
+        chat = serializer.save()
+        chat.person.add(self.request.user)
+
+
+class MessageListAPIView(generics.ListAPIView):
+    serializer_class = MessageSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        chat = get_object_or_404(Chat, pk=self.kwargs['chat_id'])
+
+        if not chat.person.filter(pk=self.request.user.pk).exists():
+            raise PermissionDenied('Вы не состоите в этом чате.')
+
+        return Message.objects.filter(chat=chat).select_related('sender').order_by('send_time')
+
+
+class MessageCreateAPIView(generics.CreateAPIView):
+    serializer_class = MessageSerializer
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def perform_create(self, serializer):
+        chat = get_object_or_404(Chat, pk=self.kwargs['chat_id'])
+
+        if not chat.person.filter(pk=self.request.user.pk).exists():
+            raise PermissionDenied('Вы не состоите в этом чате.')
+
+        serializer.save(chat=chat)
