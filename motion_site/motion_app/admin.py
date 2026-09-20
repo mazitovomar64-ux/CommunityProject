@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import Activity, Direction, Project, ProjectMember, Review, SiteInfo, Task, Team, TeamMember, UserProfile
+from .models import Activity, Direction, Project, ProjectMember, Review, SiteInfo, Task, Team, TeamMember, UserProfile ,Chat,Message
 
 
 @admin.register(UserProfile)
@@ -73,3 +73,12 @@ class SiteInfoAdmin(admin.ModelAdmin):
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
     list_display = ['user', 'project', 'rating', 'created_date']
+
+@admin.register(Chat)
+class ChatAdmin(admin.ModelAdmin):
+    list_display = ['id', 'created_date']
+    filter_horizontal = ['person']
+
+@admin.register(Message)
+class MessageAdmin(admin.ModelAdmin):
+    list_display = ['id', 'chat', 'sender', 'text', 'send_time']

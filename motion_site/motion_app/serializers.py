@@ -2,7 +2,7 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Activity, Direction, Project, ProjectMember, Review, SiteInfo, Task, Team, TeamMember, UserProfile
+from .models import Activity, Direction, Project, ProjectMember, Review, SiteInfo, Task, Team, TeamMember, UserProfile, Chat , Message
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -269,3 +269,42 @@ class ReviewSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
+
+class MessageSerializer(serializers.ModelSerializer):
+    sender_id = serializers.IntegerField(source='sender.id', read_only=True)
+    sender_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Message
+        fields = ['id', 'chat', 'text', 'sender_id', 'sender_name', 'image', 'file', 'send_time']
+        read_only_fields = ['id', 'sender_id', 'sender_name', 'send_time']
+
+    def get_sender_name(self, obj):
+        return obj.sender.get_full_name() or obj.sender.email
+
+    def validate(self, attrs):
+        text = attrs.get('text', '').strip()
+        image = attrs.get('image')
+        file = attrs.get('file')
+        if not text and not image and not file:
+            raise serializers.ValidationError('Сообщение не может быть пустым.')
+        return attrs
+
+    def create(self, validated_data):
+        validated_data['sender'] = self.context['request'].user
+        return super().create(validated_data)
+
+
+class ChatSerializer(serializers.ModelSerializer):
+    person = UserShortSerializer(many=True, read_only=True)
+    person_ids = serializers.PrimaryKeyRelatedField(queryset=UserProfile.objects.filter(is_active=True), many=True, source='person', write_only=True)
+    last_message = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Chat
+        fields = ['id', 'person', 'person_ids', 'created_date', 'last_message']
+        read_only_fields = ['id', 'created_date']
+
+    def get_last_message(self, obj):
+        last = obj.messages.order_by('-send_time').first()
+        return MessageSerializer(last).data if last else None

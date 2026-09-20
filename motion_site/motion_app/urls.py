@@ -6,7 +6,7 @@ from .views import (ActivityListAPIView, CustomLoginView,DetailUserProfileAPIVie
                     MyProfileView, ProjectDetailAPIView, ProjectListAPIView,
                     ProjectMemberViewSet, ProjectViewSet, RegisterView, ReviewViewSet, SiteInfoView,
                     TaskDetailAPIView, TaskListAPIView, TaskViewSet, TeamMemberViewSet, TeamViewSet,
-                    UserPortfolioView, UserProfileListAPIView)
+                    UserPortfolioView, UserProfileListAPIView,ChatListAPIView,MessageListAPIView,MessageCreateAPIView)
 
 
 router = routers.SimpleRouter()
@@ -46,6 +46,10 @@ urlpatterns = [
     path('tasks/<int:pk>/', TaskDetailAPIView.as_view(), name='task_detail'),
 
     path('activity/', ActivityListAPIView.as_view(), name='activity_list'),
+
+    path('chats/', ChatListAPIView.as_view(), name='chat_list'),
+    path('chats/<int:chat_id>/messages/', MessageListAPIView.as_view(), name='chat_messages'),
+    path('chats/<int:chat_id>/messages/upload/', MessageCreateAPIView.as_view(), name='chat_message_upload'),
 
     path('', include(router.urls)),
 ]
