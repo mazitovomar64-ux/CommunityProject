@@ -9,7 +9,6 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
 @database_sync_to_async
 def get_user_from_token(token):
-    # та же проверка, что и в REST API: подпись, срок, тип токена и is_active пользователя
     authentication = JWTAuthentication()
     try:
         validated = authentication.get_validated_token(token)
