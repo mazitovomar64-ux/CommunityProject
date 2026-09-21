@@ -77,9 +77,7 @@ TEMPLATES = [
 ASGI_APPLICATION = 'motion_site.asgi.application'
 WSGI_APPLICATION = 'motion_site.wsgi.application'
 
-# Redis нужен, когда сервер работает в нескольких процессах (Docker).
-# Без REDIS_URL используется in-memory layer: для разработки и одного процесса этого достаточно,
-# и чат работает без установленного Redis.
+
 REDIS_URL = os.getenv('REDIS_URL')
 
 if REDIS_URL:
