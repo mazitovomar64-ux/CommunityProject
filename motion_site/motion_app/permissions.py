@@ -2,7 +2,6 @@ from rest_framework import permissions
 
 
 def is_admin(user):
-    # Django-суперпользователь тоже считается администратором
     return bool(user and user.is_authenticated and (user.user_role == 'admin' or user.is_superuser))
 
 
