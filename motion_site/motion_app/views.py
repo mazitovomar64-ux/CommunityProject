@@ -723,5 +723,4 @@ class MessageCreateAPIView(generics.CreateAPIView):
 
         message = serializer.save(chat=chat)
 
-        # чтобы остальные участники получили сообщение сразу, как и текстовые
         async_to_sync(get_channel_layer().group_send)(f'chat_{chat.pk}', build_message_payload(message))
