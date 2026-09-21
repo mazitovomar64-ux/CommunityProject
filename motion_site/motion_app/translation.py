@@ -1,5 +1,6 @@
-from .models import UserProfile,Direction,Team,TeamMember,Project,ProjectMember,Task,Activity,SiteInfo
-from modeltranslation.translator import TranslationOptions,register
+from modeltranslation.translator import TranslationOptions, register
+
+from .models import Direction, Project, ProjectMember, Service, SiteInfo, Task, Team, TeamMember, Translation, UserProfile
 
 
 @register(UserProfile)
@@ -37,11 +38,16 @@ class TaskTranslationOptions(TranslationOptions):
     fields = ('title', 'description')
 
 
-@register(Activity)
-class ActivityTranslationOptions(TranslationOptions):
-    fields = ('description',)
-
-
 @register(SiteInfo)
 class SiteInfoTranslationOptions(TranslationOptions):
     fields = ('about_text', 'location')
+
+
+@register(Service)
+class ServiceTranslationOptions(TranslationOptions):
+    fields = ('title', 'description')
+
+
+@register(Translation)
+class TranslationTextOptions(TranslationOptions):
+    fields = ('value',)

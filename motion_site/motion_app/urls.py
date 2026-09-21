@@ -1,12 +1,14 @@
 from django.urls import include, path
 from rest_framework import routers
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
-from .views import (ActivityListAPIView, CustomLoginView,DetailUserProfileAPIView,
-                    DirectionListAPIView, LogoutView,MyPermissionsView, MyPortfolioView,
-                    MyProfileView, ProjectDetailAPIView, ProjectListAPIView,
-                    ProjectMemberViewSet, ProjectViewSet, RegisterView, ReviewViewSet, SiteInfoView,
+from .views import (AboutView, ActivityListAPIView, ChatListAPIView, ContactsView, CustomLoginView,DetailUserProfileAPIView,
+                    DirectionListAPIView, DirectionManageViewSet, GeneralChatAPIView, HomeView, LogoutView, MessageCreateAPIView, MessageListAPIView,MyPermissionsView, MyPortfolioView,
+                    MyProfileView, MyProjectListAPIView, ProjectDetailAPIView, ProjectListAPIView,
+                    ProjectMemberViewSet, ProjectViewSet, RegisterView, ReviewViewSet, RolesView, ServiceListAPIView,
+                    ServiceManageViewSet, SiteInfoManageView, SiteInfoView,
                     TaskDetailAPIView, TaskListAPIView, TaskViewSet, TeamMemberViewSet, TeamViewSet,
-                    UserPortfolioView, UserProfileListAPIView,ChatListAPIView,MessageListAPIView,MessageCreateAPIView)
+                    TranslationListAPIView, TranslationManageViewSet, UserManageViewSet,
+                    UserPortfolioView, UserProfileListAPIView)
 
 
 router = routers.SimpleRouter()
@@ -17,6 +19,10 @@ router.register(r'tasks_manage', TaskViewSet, basename='tasks_manage')
 router.register(r'teams', TeamViewSet, basename='teams')
 router.register(r'team_members', TeamMemberViewSet, basename='team_members')
 router.register(r'reviews', ReviewViewSet, basename='reviews')
+router.register(r'users_manage', UserManageViewSet, basename='users_manage')
+router.register(r'directions_manage', DirectionManageViewSet, basename='directions_manage')
+router.register(r'services_manage', ServiceManageViewSet, basename='services_manage')
+router.register(r'translations_manage', TranslationManageViewSet, basename='translations_manage')
 
 
 urlpatterns = [
@@ -38,9 +44,18 @@ urlpatterns = [
     path('directions/', DirectionListAPIView.as_view(), name='direction_list'),
 
     path('site-info/', SiteInfoView.as_view(), name='site_info'),
+    path('site-info/manage/', SiteInfoManageView.as_view(), name='site_info_manage'),
+
+    path('home/', HomeView.as_view(), name='home'),
+    path('about/', AboutView.as_view(), name='about'),
+    path('services/', ServiceListAPIView.as_view(), name='service_list'),
+    path('contacts/', ContactsView.as_view(), name='contacts'),
+    path('translations/', TranslationListAPIView.as_view(), name='translations'),
+    path('roles/', RolesView.as_view(), name='roles'),
 
     path('projects/', ProjectListAPIView.as_view(), name='project_list'),
     path('projects/<int:pk>/', ProjectDetailAPIView.as_view(), name='project_detail'),
+    path('my-projects/', MyProjectListAPIView.as_view(), name='my_projects'),
 
     path('tasks/', TaskListAPIView.as_view(), name='task_list'),
     path('tasks/<int:pk>/', TaskDetailAPIView.as_view(), name='task_detail'),
@@ -48,6 +63,7 @@ urlpatterns = [
     path('activity/', ActivityListAPIView.as_view(), name='activity_list'),
 
     path('chats/', ChatListAPIView.as_view(), name='chat_list'),
+    path('chats/general/', GeneralChatAPIView.as_view(), name='chat_general'),
     path('chats/<int:chat_id>/messages/', MessageListAPIView.as_view(), name='chat_messages'),
     path('chats/<int:chat_id>/messages/upload/', MessageCreateAPIView.as_view(), name='chat_message_upload'),
 

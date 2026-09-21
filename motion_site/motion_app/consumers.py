@@ -1,13 +1,17 @@
 import json
 
 from asgiref.sync import async_to_sync
-from channels.db import database_sync_to_async
 from channels.generic.websocket import WebsocketConsumer
 
+from .chat import build_message_payload, can_access_chat
 from .models import Chat, Message
+
+MAX_MESSAGE_LENGTH = 2000
 
 
 class ChatConsumer(WebsocketConsumer):
+
+
     def connect(self):
         self.user = self.scope["user"]
 
@@ -24,7 +28,7 @@ class ChatConsumer(WebsocketConsumer):
             self.close(code=4004)
             return
 
-        if not self.chat.person.filter(pk=self.user.pk).exists():
+        if not can_access_chat(self.user, self.chat):
             self.close(code=4003)
             return
 
@@ -34,7 +38,7 @@ class ChatConsumer(WebsocketConsumer):
         self.accept()
 
     def disconnect(self, close_code):
-        if hasattr(self, "room_group_name"):
+        if hasattr(self, "room_group_name") and hasattr(self, "chat"):
             async_to_sync(self.channel_layer.group_discard)(
                 self.room_group_name, self.channel_name
             )
@@ -43,11 +47,15 @@ class ChatConsumer(WebsocketConsumer):
         try:
             data = json.loads(text_data)
             text = data["message"].strip()
-        except (json.JSONDecodeError, KeyError, AttributeError):
+        except (json.JSONDecodeError, KeyError, AttributeError, TypeError):
             self.send(text_data=json.dumps({"error": "invalid_payload"}))
             return
 
         if not text:
+            return
+
+        if len(text) > MAX_MESSAGE_LENGTH:
+            self.send(text_data=json.dumps({"error": "message_too_long"}))
             return
 
         message = Message.objects.create(
@@ -56,17 +64,8 @@ class ChatConsumer(WebsocketConsumer):
             chat=self.chat,
         )
 
-        payload = {
-            "type": "chat.message",
-            "id": message.pk,
-            "message": message.text,
-            "sender_id": self.user.pk,
-            "sender_name": self.user.get_full_name() or self.user.email,
-            "send_time": message.send_time.isoformat(),
-        }
-
         async_to_sync(self.channel_layer.group_send)(
-            self.room_group_name, payload
+            self.room_group_name, build_message_payload(message)
         )
 
     def chat_message(self, event):

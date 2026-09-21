@@ -10,11 +10,22 @@ class UserProfile(AbstractUser):
     bio = models.TextField('О себе', blank=True)
     avatar = models.ImageField('Аватар', upload_to='avatars/', blank=True, null=True)
     cv_file = models.FileField('Резюме', upload_to='cv/', blank=True, null=True)
-    RoleChoices = (('admin', 'Администратор'), ('employee', 'Сотрудник'))
+    RoleChoices = (('admin', 'Администратор'), ('team_lead', 'Тимлид'), ('employee', 'Сотрудник'))
     user_role = models.CharField('Роль', max_length=20, choices=RoleChoices, default='employee')
+    WorkStatusChoices = (('available', 'Готов к проекту'), ('busy', 'Занят'), ('temporarily_unavailable', 'Временно недоступен'))
+    work_status = models.CharField('Рабочий статус', max_length=30, choices=WorkStatusChoices, default='available')
+    directions = models.ManyToManyField('Direction', related_name='users', blank=True, verbose_name='Навыки / технологии')
 
     def __str__(self):
         return self.get_full_name() or self.email
+
+    def save(self, *args, **kwargs):
+        # Администратор по роли должен иметь доступ в Django-админку.
+        # Права здесь только выдаются; снимаются явно при смене роли через API.
+        if self.user_role == 'admin':
+            self.is_staff = True
+            self.is_superuser = True
+        super().save(*args, **kwargs)
 
     def get_average_rating(self):
         ratings = self.review_user.all()
@@ -28,6 +39,7 @@ class UserProfile(AbstractUser):
 
 class Direction(models.Model):
     title = models.CharField('Название', max_length=100)
+    slug = models.SlugField('Слаг для фильтрации', max_length=50, unique=True, null=True, blank=True)
     description = models.TextField('Описание')
     icon = models.CharField('Иконка', max_length=10)
 
@@ -37,6 +49,11 @@ class Direction(models.Model):
 
     def __str__(self):
         return self.title
+
+    def save(self, *args, **kwargs):
+        # пустой slug храним как NULL, чтобы не нарушать уникальность
+        self.slug = self.slug or None
+        super().save(*args, **kwargs)
 
 
 class Team(models.Model):
@@ -71,6 +88,10 @@ class Project(models.Model):
     title = models.CharField('Название проекта', max_length=150)
     description = models.TextField('Описание')
     icon = models.CharField('Иконка', max_length=10, blank=True)
+    cover = models.ImageField('Обложка', upload_to='project_covers/', blank=True, null=True)
+    github_url = models.URLField('GitHub', blank=True)
+    demo_url = models.URLField('Ссылка на демо', blank=True)
+    directions = models.ManyToManyField('Direction', related_name='projects', blank=True, verbose_name='Технологии')
     CategoryChoices = (('AI', 'Искусственный интеллект'), ('Web', 'Веб-разработка'), ('LLM', 'LLM / NLP'), ('ML', 'Машинное обучение'), ('Backend', 'Backend'), ('Frontend', 'Frontend'), ('Design', 'Дизайн'))
     category = models.CharField('Категория', max_length=50, choices=CategoryChoices)
     StatusChoices = (('active', 'Активен'), ('review', 'На проверке'), ('done', 'Завершён'), ('on_hold', 'Приостановлен'))
@@ -120,6 +141,9 @@ class Task(models.Model):
     StatusChoices = (('new', 'Новая'), ('hold', 'На паузе'), ('in_progress', 'В работе'), ('review', 'На проверке'), ('done', 'Выполнена'))
     status = models.CharField('Статус', max_length=20, choices=StatusChoices, default='new')
     assigned_to = models.ManyToManyField(UserProfile, related_name='tasks', blank=True, verbose_name='Исполнители')
+    result_text = models.TextField('Результат работы', blank=True)
+    github_url = models.URLField('Ссылка на GitHub', blank=True)
+    submitted_at = models.DateTimeField('Дата отправки на проверку', null=True, blank=True)
     created_at = models.DateTimeField('Дата создания', auto_now_add=True)
     updated_at = models.DateTimeField('Дата изменения', auto_now=True)
 
@@ -148,8 +172,10 @@ class Activity(models.Model):
 class SiteInfo(models.Model):
     about_text = models.TextField('О сайте')
     contact_email = models.EmailField('Контактная почта')
+    phone = models.CharField('Телефон', max_length=50, blank=True)
     instagram = models.CharField('Instagram', max_length=100)
     telegram = models.CharField('Telegram', max_length=100)
+    linkedin = models.CharField('LinkedIn', max_length=100, blank=True)
     location = models.CharField('Местоположение', max_length=150)
 
     class Meta:
@@ -174,8 +200,40 @@ class Review(models.Model):
     def __str__(self):
         return f'{self.user} — {self.rating}'
 
+class Service(models.Model):
+    title = models.CharField('Название', max_length=150)
+    description = models.TextField('Описание')
+    icon = models.CharField('Иконка', max_length=10, blank=True)
+    order = models.PositiveIntegerField('Порядок', default=0)
+    is_active = models.BooleanField('Показывать на сайте', default=True)
+
+    class Meta:
+        verbose_name = 'Услуга'
+        verbose_name_plural = 'Услуги'
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return self.title
+
+
+class Translation(models.Model):
+    """Тексты интерфейса и страниц (главная, About, меню). Поле value переводится через modeltranslation."""
+    key = models.CharField('Ключ', max_length=150, unique=True)
+    value = models.TextField('Текст', blank=True)
+
+    class Meta:
+        verbose_name = 'Перевод'
+        verbose_name_plural = 'Переводы'
+        ordering = ['key']
+
+    def __str__(self):
+        return self.key
+
+
 class Chat(models.Model):
-    person = models.ManyToManyField(UserProfile, related_name='chats', verbose_name='Участники')
+    name = models.CharField('Название', max_length=100, blank=True)
+    is_general = models.BooleanField('Общий чат для всех сотрудников', default=False)
+    person = models.ManyToManyField(UserProfile, related_name='chats', blank=True, verbose_name='Участники')
     created_date = models.DateField('Дата создания', auto_now_add=True)
 
     class Meta:
@@ -183,7 +241,7 @@ class Chat(models.Model):
         verbose_name_plural = 'Чаты'
 
     def __str__(self):
-        return f'Чат #{self.pk}'
+        return self.name or f'Чат #{self.pk}'
 
 
 class Message(models.Model):
@@ -201,4 +259,3 @@ class Message(models.Model):
 
     def __str__(self):
         return f'{self.sender}: {self.text[:30]}'
-
