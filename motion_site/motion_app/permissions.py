@@ -15,8 +15,6 @@ def is_manager(user):
 
 
 def can_manage_project(user, project):
-    """Админ управляет любым проектом. Тимлид — проектами, которые он создал,
-    и проектами, где он назначен участником."""
     if is_admin(user):
         return True
     if not is_team_lead(user):

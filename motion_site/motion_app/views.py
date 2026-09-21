@@ -22,8 +22,6 @@ def add_activity(user, description):
 
 
 class LargePagination(LimitOffsetPagination):
-    """Для небольших справочников (направления, услуги, переводы): формат ответа тот же,
-    но по умолчанию отдаём всё сразу."""
     default_limit = 100
     max_limit = 500
 
@@ -34,7 +32,6 @@ class ChatPagination(LimitOffsetPagination):
 
 
 def filter_by_direction(queryset, value):
-    """Фильтр ?direction=<slug или id> для проектов и сотрудников."""
     if not value:
         return queryset
     condition = Q(directions__slug=value)
@@ -44,12 +41,10 @@ def filter_by_direction(queryset, value):
 
 
 def current_language():
-    """Язык текущего запроса: 'ky' для путей /ky/..., иначе 'ru' (определяет LocaleMiddleware)."""
     return (translation.get_language() or 'ru').split('-')[0]
 
 
 def get_translations(prefix=''):
-    """Возвращает {ключ: текст} на языке запроса (если перевода нет — русский, это делает modeltranslation)."""
     items = Translation.objects.filter(key__startswith=prefix) if prefix else Translation.objects.all()
     return {item.key: item.value for item in items}
 
@@ -167,7 +162,7 @@ class MyPortfolioView(generics.GenericAPIView):
 
 
 class UserPortfolioView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request, pk):
         user = get_object_or_404(UserProfile, pk=pk, is_active=True)
@@ -288,7 +283,6 @@ class ProjectDetailAPIView(generics.RetrieveAPIView):
 
 
 class MyProjectListAPIView(generics.ListAPIView):
-    """Мои проекты: где я участник, а для тимлида/админа — ещё и созданные мной."""
     serializer_class = ListProjectSerializer
     permission_classes = [IsAuthenticated]
 
@@ -300,7 +294,6 @@ class MyProjectListAPIView(generics.ListAPIView):
 class ProjectViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.all().select_related('created_by', 'team').prefetch_related('directions', 'participants__user', 'tasks')
     serializer_class = ProjectCreateSerializer
-    # читать может любой авторизованный, создавать/менять — админ и тимлид, удалять — только админ
     permission_classes = [ManagerWriteAdminDelete]
 
     def get_object(self):
@@ -382,8 +375,6 @@ class TaskListAPIView(generics.ListAPIView):
 
 
 class TaskDetailAPIView(generics.RetrieveUpdateAPIView):
-    """GET — задача (исполнитель, а также админ/тимлид проекта).
-    PATCH — только исполнитель: статус по разрешённым переходам, результат, ссылка на GitHub."""
     permission_classes = [IsAuthenticated]
     http_method_names = ['get', 'patch', 'head', 'options']
     queryset = Task.objects.all().select_related('project').prefetch_related('assigned_to')
@@ -482,11 +473,11 @@ class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = [ReviewPermission]
 
-    def get_queryset(self):
-        if is_admin(self.request.user):
-            return self.queryset
-
-        return self.queryset.filter(user=self.request.user)
+    # def get_queryset(self):
+    #     if is_admin(self.request.user):
+    #         return self.queryset
+    #
+    #     return self.queryset.filter(user=self.request.user)
 
     def perform_create(self, serializer):
         review = serializer.save()
@@ -528,8 +519,6 @@ class ServiceListAPIView(generics.ListAPIView):
 
 
 class TranslationListAPIView(generics.GenericAPIView):
-    """Публичный словарь переводов: {ключ: текст} на языке запроса (/translations/ — ru, /ky/translations/ — ky).
-    Необязательный ?prefix=home. отдаёт только ключи с этим префиксом."""
     permission_classes = [AllowAny]
     pagination_class = None
 
@@ -538,7 +527,6 @@ class TranslationListAPIView(generics.GenericAPIView):
 
 
 class HomeView(generics.GenericAPIView):
-    """Данные главной страницы. Тексты берутся из переводов (ключи home.*)."""
     permission_classes = [AllowAny]
     pagination_class = None
 
@@ -572,7 +560,6 @@ class HomeView(generics.GenericAPIView):
 
 
 class AboutView(generics.GenericAPIView):
-    """Страница About Us. Текст — из SiteInfo, заголовки/миссия/направления — из переводов about.*."""
     permission_classes = [AllowAny]
     pagination_class = None
 
@@ -600,16 +587,15 @@ class AboutView(generics.GenericAPIView):
         })
 
 
-class RolesView(generics.GenericAPIView):
-    permission_classes = [IsAdminRole]
-    pagination_class = None
-
-    def get(self, request):
-        return Response([{'value': value, 'label': label} for value, label in UserProfile.RoleChoices])
+# class RolesView(generics.GenericAPIView):
+#     permission_classes = [IsAdminRole]
+#     pagination_class = None
+#
+#     def get(self, request):
+#         return Response([{'value': value, 'label': label} for value, label in UserProfile.RoleChoices])
 
 
 class UserManageViewSet(viewsets.ModelViewSet):
-    """Управление пользователями и ролями — только админ."""
     queryset = UserProfile.objects.all().prefetch_related('directions').order_by('id')
     serializer_class = UserManageSerializer
     permission_classes = [IsAdminRole]
@@ -678,7 +664,6 @@ class TranslationManageViewSet(viewsets.ModelViewSet):
 
 
 class SiteInfoManageView(generics.RetrieveUpdateAPIView):
-    """Единая запись «Информация о сайте» (About, контакты) — редактирует админ."""
     serializer_class = SiteInfoManageSerializer
     permission_classes = [IsAdminRole]
 
@@ -690,7 +675,7 @@ class SiteInfoManageView(generics.RetrieveUpdateAPIView):
 
 
 class ChatListAPIView(generics.ListCreateAPIView):
-    """Чаты пользователя (+ общий чат) и создание нового чата."""
+
     serializer_class = ChatSerializer
     permission_classes = [IsAuthenticated]
 
@@ -704,7 +689,6 @@ class ChatListAPIView(generics.ListCreateAPIView):
 
 
 class GeneralChatAPIView(generics.RetrieveAPIView):
-    """Общий чат Motion Community: отсюда фронтенд берёт id комнаты для WebSocket."""
     serializer_class = ChatSerializer
     permission_classes = [IsAuthenticated]
 
@@ -713,7 +697,6 @@ class GeneralChatAPIView(generics.RetrieveAPIView):
 
 
 class MessageListAPIView(generics.ListAPIView):
-    """История чата: сначала новые, по 50 сообщений (?limit=&offset= для подгрузки старых)."""
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated]
     pagination_class = ChatPagination
@@ -728,7 +711,6 @@ class MessageListAPIView(generics.ListAPIView):
 
 
 class MessageCreateAPIView(generics.CreateAPIView):
-    """Отправка сообщения с картинкой/файлом (обычный текст отправляется через WebSocket)."""
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]

@@ -267,10 +267,6 @@ class TaskCreateSerializer(serializers.ModelSerializer):
 
 
 class TaskProgressSerializer(serializers.ModelSerializer):
-    """Что может менять исполнитель: статус (по разрешённым переходам),
-    результат работы и ссылку на GitHub. Простой workflow:
-    new/hold -> in_progress -> review; из review можно вернуть в in_progress.
-    Статус done ставит только админ или тимлид."""
     ALLOWED_TRANSITIONS = {
         'new': {'in_progress'},
         'hold': {'in_progress'},
@@ -384,7 +380,6 @@ class TranslationSerializer(serializers.ModelSerializer):
 
 
 class UserManageSerializer(serializers.ModelSerializer):
-    """Управление пользователями (только админ): создание, изменение, роли."""
     password = serializers.CharField(write_only=True, min_length=8, required=False)
     role_display = serializers.CharField(source='get_user_role_display', read_only=True)
     directions = serializers.PrimaryKeyRelatedField(queryset=Direction.objects.all(), many=True, required=False)
@@ -421,7 +416,6 @@ class UserManageSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
-        # при понижении админа снимаем доступ в Django-админку
         if old_role == 'admin' and instance.user_role != 'admin':
             instance.is_staff = False
             instance.is_superuser = False
@@ -440,7 +434,6 @@ ALLOWED_CHAT_UPLOAD_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.pd
 
 
 def validate_chat_upload(upload):
-    """Ограничиваем размер и тип загружаемых файлов (иначе через чат можно залить html/js/exe)."""
     if upload is None:
         return upload
     if upload.size > MAX_CHAT_UPLOAD_SIZE:

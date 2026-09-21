@@ -216,8 +216,11 @@ class Service(models.Model):
         return self.title
 
 
+
+
+
+
 class Translation(models.Model):
-    """Тексты интерфейса и страниц (главная, About, меню). Поле value переводится через modeltranslation."""
     key = models.CharField('Ключ', max_length=150, unique=True)
     value = models.TextField('Текст', blank=True)
 
@@ -228,6 +231,9 @@ class Translation(models.Model):
 
     def __str__(self):
         return self.key
+
+
+
 
 
 class Chat(models.Model):

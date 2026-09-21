@@ -4,7 +4,7 @@ from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 from .views import (AboutView, ActivityListAPIView, ChatListAPIView, ContactsView, CustomLoginView,DetailUserProfileAPIView,
                     DirectionListAPIView, DirectionManageViewSet, GeneralChatAPIView, HomeView, LogoutView, MessageCreateAPIView, MessageListAPIView,MyPermissionsView, MyPortfolioView,
                     MyProfileView, MyProjectListAPIView, ProjectDetailAPIView, ProjectListAPIView,
-                    ProjectMemberViewSet, ProjectViewSet, RegisterView, ReviewViewSet, RolesView, ServiceListAPIView,
+                    ProjectMemberViewSet, ProjectViewSet, RegisterView, ReviewViewSet, ServiceListAPIView,
                     ServiceManageViewSet, SiteInfoManageView, SiteInfoView,
                     TaskDetailAPIView, TaskListAPIView, TaskViewSet, TeamMemberViewSet, TeamViewSet,
                     TranslationListAPIView, TranslationManageViewSet, UserManageViewSet,
@@ -22,7 +22,7 @@ router.register(r'reviews', ReviewViewSet, basename='reviews')
 router.register(r'users_manage', UserManageViewSet, basename='users_manage')
 router.register(r'directions_manage', DirectionManageViewSet, basename='directions_manage')
 router.register(r'services_manage', ServiceManageViewSet, basename='services_manage')
-router.register(r'translations_manage', TranslationManageViewSet, basename='translations_manage')
+# router.register(r'translations_manage', TranslationManageViewSet, basename='translations_manage')
 
 
 urlpatterns = [
@@ -50,8 +50,8 @@ urlpatterns = [
     path('about/', AboutView.as_view(), name='about'),
     path('services/', ServiceListAPIView.as_view(), name='service_list'),
     path('contacts/', ContactsView.as_view(), name='contacts'),
-    path('translations/', TranslationListAPIView.as_view(), name='translations'),
-    path('roles/', RolesView.as_view(), name='roles'),
+    # path('translations/', TranslationListAPIView.as_view(), name='translations'),
+    # path('roles/', RolesView.as_view(), name='roles'),
 
     path('projects/', ProjectListAPIView.as_view(), name='project_list'),
     path('projects/<int:pk>/', ProjectDetailAPIView.as_view(), name='project_detail'),
