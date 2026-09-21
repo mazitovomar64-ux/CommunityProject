@@ -4,8 +4,6 @@ from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import Activity, Chat, Direction, Message, Project, ProjectMember, Review, Service, SiteInfo, Task, Team, TeamMember, Translation, UserProfile
-
-# Роли, которых можно добавлять в проекты/команды и назначать на задачи
 MEMBER_ROLES = ['employee', 'team_lead']
 
 
